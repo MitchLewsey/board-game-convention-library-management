@@ -10,8 +10,8 @@ A server-side rendered web application for managing a board game lending library
 
 | Role | Description |
 |---|---|
-| Librarian | Convention staff who checks games in/out and logs play sessions |
-| (No login required) | Single-operator tool; no authentication for MVP |
+| Player | Convention attendee who checks games in/out and logs play sessions |
+| Staff | Convention worker who adds and removes game from the library
 
 ---
 
@@ -38,50 +38,55 @@ A server-side rendered web application for managing a board game lending library
 **Flow:**
 1. Page loads with a text input auto-focused.
 2. Librarian scans a UPC barcode (or types one manually and hits Enter).
-3. HTMX posts the UPC to `POST /scan`; the server looks up the `game_copy` by `factory_upc`.
+3. HTMX posts the UPC to `POST /scan`; the server looks up the `board_game` by `factory_upc`, then counts available copies.
 4. A result card replaces the placeholder below the input — no full page reload.
 5. The result card shows:
    - Game title and cover info (publisher, player count, play time)
-   - Current status badge
-   - Copy condition and shelf location
+   - Number of copies available (e.g. "2 of 3 copies available")
    - Context-appropriate action buttons (see flows 3 and 4 below)
 6. The input field is cleared and re-focused for the next scan.
 
 **Error states:**
 - UPC not found → "Unknown barcode. Is this game in the catalog?" with a link to add it.
+- Game found but no copies available → "All copies are currently in play."
 - Scanner inputs a malformed string → "Invalid barcode format."
 
 ---
 
 ### 3. Check Out — Mark a Game as In Play
 
-**Triggered from:** Scan result card when status is **Available**
+**Triggered from:** Scan result card when at least one copy is Available
 
-**Action button:** "Mark In Play"
+**Action button:** "Check Out"
 
 **Flow:**
-1. Librarian scans game; result card shows Available status and "Mark In Play" button.
-2. Librarian clicks button (or it could be a second scan confirm — keep it simple for MVP).
-3. HTMX posts to `POST /copies/<id>/checkout`.
-4. Server sets `availability_status = 'In Play'`.
-5. Result card updates in place — status badge changes to yellow, button changes to "Return to Shelf".
+1. Librarian scans game; result card shows copy count (e.g. "2 of 3 available") and "Check Out" button.
+2. Player clicks "Check Out" — HTMX swaps in an alias text input within the result card.
+3. Player types their alias and submits.
+4. Server finds or creates the matching `player` record by alias.
+5. Server creates a `play` record (`board_game_id`, `start_time = NOW()`).
+6. Server creates a `play_participant` row (`play_id`, `player_id`).
+7. Server sets one `game_copy` WHERE `board_game_id = ? AND availability_status = 'Available'` to `'In Play'`.
+8. Result card confirms: "Checked out to [alias]. Good luck!"
 
-**Guard:** If status is already In Play or Maintenance, the "Mark In Play" button is not shown. Instead, a warning message is displayed ("Already checked out" or "In maintenance — see librarian").
+**Guard:** If no copies are available, the "Check Out" button is not shown. Instead: "All copies are currently in play."
 
 ---
 
 ### 4. Check In — Return a Game to the Shelf
 
-**Triggered from:** Scan result card when status is **In Play**
+**Triggered from:** Scan result card when at least one copy is In Play
 
 **Action button:** "Return to Shelf"
 
 **Flow:**
-1. Librarian scans game; result card shows In Play status and "Return to Shelf" button.
-2. Librarian clicks button.
-3. HTMX posts to `POST /copies/<id>/checkin`.
-4. Server sets `availability_status = 'Available'`.
-5. Result card updates — status badge changes to green.
+1. Librarian scans game; result card shows copy counts and "Return to Shelf" button.
+2. Player clicks "Return to Shelf" — HTMX swaps in an alias selector listing players with an open play (`end_time IS NULL`) for this game.
+3. Player selects their alias and submits.
+4. Server sets `play.end_time = NOW()` on the matching open play.
+5. Server calculates and stores `duration_minutes` from `end_time - start_time`.
+6. Server sets one `game_copy` WHERE `board_game_id = ? AND availability_status = 'In Play'` to `'Available'`.
+7. Result card confirms: "Returned. Session was [N] minutes."
 
 ---
 
@@ -135,7 +140,7 @@ A server-side rendered web application for managing a board game lending library
 
 **List view:**
 - All board game titles (name, publisher, player count range, play time range, avg rating).
-- Expandable rows showing each physical copy (UPC, condition, status, shelf location).
+- Expandable rows showing each physical copy (condition, status, shelf location, notes).
 - Filter by expansion vs. base game.
 
 **Game detail (`/games/<id>`):**
@@ -159,7 +164,7 @@ A server-side rendered web application for managing a board game lending library
 1. Librarian scans game; result card shows "Flag Maintenance" button.
 2. Clicking it reveals a short text input for a condition note (e.g., "Missing 3 cards").
 3. HTMX posts to `POST /copies/<id>/maintenance`.
-4. Server sets `availability_status = 'Maintenance'` and updates `condition` with the note.
+4. Server sets `availability_status = 'Maintenance'` and saves the note to the `notes` field.
 5. Result card updates — status badge turns red.
 
 ---

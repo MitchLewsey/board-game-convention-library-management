@@ -58,6 +58,7 @@ boardgame-convention-library-management/
 
 ```sql
 CREATE TYPE availability_status AS ENUM ('Available', 'In Play', 'Maintenance');
+CREATE TYPE copy_condition AS ENUM ('Excellent', 'Good', 'Fair', 'Poor');
 ```
 
 ### Tables
@@ -67,6 +68,7 @@ CREATE TABLE board_game (
     id              SERIAL          PRIMARY KEY,
     name            VARCHAR(255)    NOT NULL,
     bgg_id          INTEGER,                        -- BoardGameGeek ID
+    factory_upc     VARCHAR(20)     UNIQUE,         -- scanned by barcode reader to identify title
     min_players     SMALLINT,
     max_players     SMALLINT,
     min_time        SMALLINT,                       -- minutes
@@ -82,9 +84,9 @@ CREATE TABLE board_game (
 CREATE TABLE game_copy (
     id                  SERIAL              PRIMARY KEY,
     board_game_id       INTEGER             NOT NULL REFERENCES board_game(id) ON DELETE CASCADE,
-    factory_upc         VARCHAR(20)         UNIQUE,         -- scanned by barcode reader
     availability_status availability_status NOT NULL DEFAULT 'Available',
-    condition           VARCHAR(50),                        -- 'Excellent', 'Good', 'Fair', 'Poor'
+    condition           copy_condition,
+    notes               TEXT,
     shelf_location      VARCHAR(50)
 );
 
@@ -97,14 +99,14 @@ CREATE TABLE player (
 CREATE TABLE play (
     id                SERIAL      PRIMARY KEY,
     board_game_id     INTEGER     NOT NULL REFERENCES board_game(id) ON DELETE RESTRICT,
-    date_played       DATE        NOT NULL DEFAULT CURRENT_DATE,
-    duration_minutes  SMALLINT
+    start_time        TIMESTAMP   NOT NULL DEFAULT NOW(),
+    end_time          TIMESTAMP,
+    duration_minutes  SMALLINT    -- stored on check-in: EXTRACT(EPOCH FROM (end_time - start_time)) / 60
 );
 
 CREATE TABLE play_participant (
     play_id     INTEGER         NOT NULL REFERENCES play(id) ON DELETE CASCADE,
     player_id   INTEGER         NOT NULL REFERENCES player(id) ON DELETE RESTRICT,
-    score       NUMERIC(8, 2),
     is_winner   BOOLEAN         NOT NULL DEFAULT FALSE,
     rating      SMALLINT        CHECK (rating BETWEEN 1 AND 10),
     PRIMARY KEY (play_id, player_id)
@@ -114,9 +116,11 @@ CREATE TABLE play_participant (
 ### Relationship Notes
 
 - `board_game.base_game_id` is a self-referential FK — expansions point to their base game.
-- `game_copy.factory_upc` is the value the barcode scanner reads. It must be `UNIQUE` so a scan unambiguously identifies one physical copy.
+- `board_game.factory_upc` is the value the barcode scanner reads. It identifies the game *title*, not an individual copy. `UNIQUE` here is correct — one UPC per edition.
+- `game_copy` has no barcode; copies are distinguished only by their `id` and status. Scanning resolves to a title, then the system picks any available copy.
 - `play_participant` uses a composite PK — a player can appear at most once per play session.
 - `play` references `board_game` (not `game_copy`) because we track what was played, not which physical box.
+- `play.end_time IS NULL` indicates an active session. Check-in finds the open play by matching `board_game_id` and the player's alias via `play_participant`.
 
 ---
 
@@ -141,7 +145,7 @@ The USB scanner is a keyboard emulator: it rapidly sends the UPC digits followed
 <div id="scan-result"></div>
 ```
 
-The `POST /scan` route queries `game_copy` by UPC and returns only the `partials/scan_result.html` fragment — no full page reload. Action buttons (Check Out / Return / Flag Maintenance) are rendered inside this partial and each POST to their own routes, which also return partials to update the result area.
+The `POST /scan` route queries `board_game` by `factory_upc`, then counts available `game_copy` rows for that title. It returns only the `partials/scan_result.html` fragment — no full page reload. The partial shows the game title, available copy count, and context-appropriate action buttons. If no copies are available, it shows a "No copies available" message instead. Action buttons POST to their own routes, which also return partials to update the result area.
 
 ---
 
