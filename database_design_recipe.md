@@ -123,3 +123,62 @@ rating              |   SMALLINT        |   check between 1 and 10
 
 primary key, (play_id, player_id)
 
+## Create DB SQL
+
+### PostgreSQL Types
+
+```sql
+CREATE TYPE availability_status AS ENUM ('Available', 'In Play', 'Maintenance');
+CREATE TYPE copy_condition AS ENUM ('Excellent', 'Good', 'Fair', 'Poor');
+```
+
+### Tables
+
+```sql
+CREATE TABLE board_game (
+    id              SERIAL          PRIMARY KEY,
+    name            VARCHAR(255)    NOT NULL,
+    bgg_id          INTEGER,                        -- BoardGameGeek ID
+    factory_upc     VARCHAR(20)     UNIQUE,         -- scanned by barcode reader to identify title
+    min_players     SMALLINT,
+    max_players     SMALLINT,
+    min_time        SMALLINT,                       -- minutes
+    max_time        SMALLINT,                       -- minutes
+    publisher       VARCHAR(255),
+    designer        VARCHAR(255),
+    artist          VARCHAR(255),
+    is_expansion    BOOLEAN         NOT NULL DEFAULT FALSE,
+    base_game_id    INTEGER         REFERENCES board_game(id) ON DELETE SET NULL,
+    avg_rating      NUMERIC(4, 2)   CHECK (avg_rating BETWEEN 0 AND 10)
+);
+
+CREATE TABLE game_copy (
+    id                  SERIAL              PRIMARY KEY,
+    board_game_id       INTEGER             NOT NULL REFERENCES board_game(id) ON DELETE CASCADE,
+    availability_status availability_status NOT NULL DEFAULT 'Available',
+    condition           copy_condition,
+    notes               TEXT,
+    shelf_location      VARCHAR(50)
+);
+
+CREATE TABLE player (
+    id      SERIAL          PRIMARY KEY,
+    name    VARCHAR(255)    NOT NULL,
+    alias   VARCHAR(100)
+);
+
+CREATE TABLE play (
+    id                SERIAL      PRIMARY KEY,
+    board_game_id     INTEGER     NOT NULL REFERENCES board_game(id) ON DELETE RESTRICT,
+    start_time        TIMESTAMP   NOT NULL DEFAULT NOW(),
+    end_time          TIMESTAMP,
+    duration_minutes  SMALLINT    -- stored on check-in: EXTRACT(EPOCH FROM (end_time - start_time)) / 60
+);
+
+CREATE TABLE play_participant (
+    play_id     INTEGER         NOT NULL REFERENCES play(id) ON DELETE CASCADE,
+    player_id   INTEGER         NOT NULL REFERENCES player(id) ON DELETE RESTRICT,
+    is_winner   BOOLEAN         NOT NULL DEFAULT FALSE,
+    rating      SMALLINT        CHECK (rating BETWEEN 1 AND 10),
+    PRIMARY KEY (play_id, player_id)
+);
