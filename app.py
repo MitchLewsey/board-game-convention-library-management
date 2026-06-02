@@ -19,6 +19,6 @@ def create_app(test=False):
 
     db.init_app(app)
 
-    import lib.models  # noqa: F401 — registers models with SQLAlchemy
+    import lib.models
 
     return app
