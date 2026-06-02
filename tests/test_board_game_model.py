@@ -1,4 +1,4 @@
-from lib.models import BoardGame
+from lib.board_game import BoardGame
 from decimal import Decimal
 
 
