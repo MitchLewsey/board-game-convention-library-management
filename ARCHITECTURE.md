@@ -27,7 +27,8 @@ boardgame-convention-library-management/
 ├── CLAUDE.md
 ├── lib/
 │   ├── db.py               # SQLAlchemy instance
-│   └── models.py           # ORM models for all 5 tables
+│   ├── models.py           # ORM models for all 5 tables
+│   └── repositories.py     # Repository classes — all database queries live here
 ├── templates/
 │   ├── base.html           # Shared layout (Tailwind CDN, HTMX, nav)
 │   ├── dashboard.html      # Inventory overview
@@ -149,9 +150,52 @@ The `POST /scan` route queries `board_game` by `factory_upc`, then counts availa
 
 ---
 
+## Repository Layer
+
+All database queries are centralised in `lib/repositories.py`. Routes never call `db.session` directly — they call repository methods instead. This keeps routes thin and makes queries mockable in tests.
+
+| Repository | Responsibility |
+|---|---|
+| `BoardGameRepository` | Look up games by UPC or ID, list all, create |
+| `GameCopyRepository` | Count/find available or in-play copies, flag maintenance, create |
+| `PlayerRepository` | Find by alias, find-or-create on check-out, list players with open plays |
+| `PlayRepository` | Create on check-out, find open session, close on check-in |
+| `PlayParticipantRepository` | Add participant on check-out, add score/winner/rating detail |
+
+**Example — scan route using repositories:**
+
+```python
+from lib.repositories import BoardGameRepository, GameCopyRepository
+
+@app.route("/scan", methods=["POST"])
+def scan():
+    upc = request.form["upc"]
+    game = BoardGameRepository.find_by_upc(upc)
+    if not game:
+        return render_template("partials/scan_result.html", error="Unknown barcode.")
+    available = GameCopyRepository.count_available(game.id)
+    total = GameCopyRepository.count_total(game.id)
+    return render_template("partials/scan_result.html", game=game, available=available, total=total)
+```
+
+**Testing with mocked repositories:**
+
+```python
+from unittest.mock import patch
+from lib.models import BoardGame
+
+def test_scan_unknown_upc(client):
+    with patch("app.BoardGameRepository.find_by_upc", return_value=None):
+        response = client.post("/scan", data={"upc": "000000000000"})
+        assert b"Unknown barcode" in response.data
+```
+
+---
+
 ## Key Conventions
 
 - All routes return full pages **or** HTMX partials. Partials omit the base layout and are identified by the `HX-Request` header (Flask: `request.headers.get('HX-Request')`).
+- Routes import and call repository methods — never `db.session` directly.
 - Status badges use Tailwind utility classes: green for Available, yellow for In Play, red for Maintenance.
 - No JavaScript build step — Tailwind Play CDN and HTMX are loaded from CDN `<script>` tags in `base.html`.
 - Database migrations managed via Flask-Migrate (`flask db init / migrate / upgrade`).

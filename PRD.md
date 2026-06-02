@@ -4,6 +4,8 @@
 
 A server-side rendered web application for managing a board game lending library at a convention. A librarian operates the app on a laptop. A USB barcode scanner (keyboard emulator) is the primary input device for identifying physical game copies. Games never leave the library building.
 
+All data access goes through repository classes (`lib/repositories.py`). Routes call repository methods — never the database session directly. See `ARCHITECTURE.md` for the full repository reference.
+
 ---
 
 ## Users

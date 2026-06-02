@@ -1,4 +1,32 @@
+-- The job of this file is to reset all of our important database tables.
+-- And add any data that is needed for the tests to run.
+-- This is so that our tests, and application, are always operating from a fresh
+-- database state, and that tests don't interfere with each other.
+
 TRUNCATE board_game CASCADE;
+
+DROP TABLE IF EXISTS board_game;
+DROP SEQUENCE IF EXISTS board_game_id_seq;
+
+CREATE TYPE availability_status AS ENUM ('Available', 'In Play', 'Maintenance');
+CREATE TYPE copy_condition AS ENUM ('Excellent', 'Good', 'Fair', 'Poor');
+
+CREATE TABLE board_game (
+    id              SERIAL          PRIMARY KEY,
+    name            VARCHAR(255)    NOT NULL,
+    bgg_id          INTEGER,                        -- BoardGameGeek ID
+    factory_upc     VARCHAR(20)     UNIQUE,         -- scanned by barcode reader to identify title
+    min_players     SMALLINT,
+    max_players     SMALLINT,
+    min_time        SMALLINT,                       -- minutes
+    max_time        SMALLINT,                       -- minutes
+    publisher       VARCHAR(255),
+    designer        VARCHAR(255),
+    artist          VARCHAR(255),
+    is_expansion    BOOLEAN         NOT NULL DEFAULT FALSE,
+    base_game_id    INTEGER         REFERENCES board_game(id) ON DELETE SET NULL,
+    avg_rating      NUMERIC(4, 2)   CHECK (avg_rating BETWEEN 0 AND 10)
+);
 
 INSERT INTO board_game (name, bgg_id, factory_upc, min_players, max_players, min_time, max_time, publisher, designer, artist, is_expansion, avg_rating)
 VALUES
