@@ -37,8 +37,29 @@ Work through phases in order. Write tests before implementation. Mark items done
   - `PlayParticipant` composite PK prevents duplicate player per play
   - `PlayParticipant.rating` CHECK rejects values outside 1–10
 - [ ] Run tests — all model tests pass
-- [ ] Write `seeds/seed.py` with ~10 sample games, ~5 players, and game copies
-- [ ] Run seed script and verify data in psql
+- [ ] Write `tests/test_repositories.py` — one test per repository method:
+  - `BoardGameRepository.find_by_upc` returns correct game; returns `None` for unknown UPC
+  - `BoardGameRepository.get_all` returns all games ordered by name
+  - `GameCopyRepository.count_available` returns correct count
+  - `GameCopyRepository.find_available` returns an Available copy; returns `None` when none exist
+  - `GameCopyRepository.find_in_play` returns an In Play copy
+  - `GameCopyRepository.flag_maintenance` sets status and saves notes
+  - `PlayerRepository.find_by_alias` returns correct player; returns `None` for unknown alias
+  - `PlayerRepository.find_or_create` returns existing player; creates new player if alias not found
+  - `PlayerRepository.find_with_open_plays` returns only players with `end_time IS NULL` for that game
+  - `PlayRepository.create` creates play with `start_time` set and `end_time` as `None`
+  - `PlayRepository.find_open` returns open play for game + player; returns `None` after close
+  - `PlayRepository.close` sets `end_time`, calculates `duration_minutes`
+  - `PlayParticipantRepository.create` creates participant row
+  - `PlayParticipantRepository.add_detail` updates score, winner flag, and rating
+- [ ] Write `lib/repositories.py` — implement all repository classes to pass the tests
+- [ ] Run tests — all repository tests pass
+- [ ] Run seed files and verify data in psql:
+  ```
+  psql -h 127.0.0.1 boardgame_library < seeds/seeds_board_game.sql
+  psql -h 127.0.0.1 boardgame_library < seeds/seeds_game_copy.sql
+  psql -h 127.0.0.1 boardgame_library < seeds/seeds_player.sql
+  ```
 
 ---
 
@@ -54,7 +75,7 @@ Work through phases in order. Write tests before implementation. Mark items done
   - `GET /` returns 200
   - Response contains copy status summary counts
 - [ ] Implement dashboard route + template (`GET /`):
-  - Returns all `GameCopy` rows joined to `BoardGame`
+  - Uses `GameCopyRepository.get_all_for_game` and `BoardGameRepository.get_all`
   - Shows status summary counts and filterable copy table
 
 - [ ] Write tests for scan page:
@@ -63,29 +84,29 @@ Work through phases in order. Write tests before implementation. Mark items done
 - [ ] Implement scan page (`GET /scan`):
   - Template with auto-focused UPC input and empty result div
 
-- [ ] Write tests for scan lookup:
+- [ ] Write tests for scan lookup (mock repositories):
   - `POST /scan` with known UPC returns game title in partial
   - `POST /scan` with unknown UPC returns error message
   - `POST /scan` with no available copies returns "all copies in play" message
 - [ ] Implement scan lookup (`POST /scan`):
-  - Queries `BoardGame` by `factory_upc`, counts available copies
+  - Uses `BoardGameRepository.find_by_upc`, `GameCopyRepository.count_available`, `GameCopyRepository.count_total`
   - Returns `partials/scan_result.html` (no base layout when `HX-Request` header present)
 
-- [ ] Write tests for check-out:
+- [ ] Write tests for check-out (mock repositories):
   - `POST /games/<id>/checkout` with valid alias creates a `Play` and `PlayParticipant`
   - Sets one `GameCopy` to `In Play`
-  - Unknown alias creates a new `Player` record
+  - Unknown alias creates a new `Player` record via `PlayerRepository.find_or_create`
 - [ ] Implement check-out alias input partial and route (`POST /games/<id>/checkout`):
   - HTMX swaps in alias text input
-  - On submit: find/create player, create `Play` (start_time=NOW()), create `PlayParticipant`, set copy to `In Play`
+  - On submit: `PlayerRepository.find_or_create`, `PlayRepository.create`, `PlayParticipantRepository.create`, `GameCopyRepository.find_available` → set to `In Play`
   - Returns updated `partials/scan_result.html`
 
-- [ ] Write tests for check-in:
+- [ ] Write tests for check-in (mock repositories):
   - `POST /games/<id>/checkin` with valid alias sets `play.end_time`, stores `duration_minutes`, sets copy to `Available`
-  - Alias selector only shows players with an open play (`end_time IS NULL`) for this game
+  - Alias selector only shows players returned by `PlayerRepository.find_with_open_plays`
 - [ ] Implement check-in alias selector partial and route (`POST /games/<id>/checkin`):
-  - HTMX swaps in alias selector (players with open plays for this game)
-  - On submit: set `end_time=NOW()`, calculate and store `duration_minutes`, set copy to `Available`
+  - HTMX swaps in alias selector via `PlayerRepository.find_with_open_plays`
+  - On submit: `PlayRepository.find_open` → `PlayRepository.close`, `GameCopyRepository.find_in_play` → set to `Available`
   - Returns updated `partials/scan_result.html`
 
 - [ ] Run all tests — Phase 2 passes
@@ -98,22 +119,24 @@ Work through phases in order. Write tests before implementation. Mark items done
   - `GET /players/search?q=ali` returns matching players as HTML partial
   - Empty query returns no results
 - [ ] Implement player search (`GET /players/search?q=`):
+  - Uses `PlayerRepository.find_by_alias` (or name search)
   - Returns `partials/player_row.html` with matching players
 
 - [ ] Write tests for log play page:
   - `GET /plays/new` returns 200
   - `GET /plays/new` with `?game_id=` pre-selects the game
 - [ ] Implement log play page (`GET /plays/new`):
+  - Uses `BoardGameRepository.get_all` for game selector
   - Game selector (dropdown or scan input), duration field
   - Participant section with Add Player form
 
-- [ ] Write tests for save play:
-  - `POST /plays` with valid data creates `Play` and one `PlayParticipant` per participant
+- [ ] Write tests for save play (mock repositories):
+  - `POST /plays` with valid data calls `PlayRepository.create` and `PlayParticipantRepository.create` per participant
   - Rejects submission with zero participants
   - Rejects submission with more than one winner
   - Rejects rating outside 1–10
 - [ ] Implement save play route (`POST /plays`):
-  - Creates `Play` and `PlayParticipant` records
+  - Uses `PlayRepository.create`, `PlayParticipantRepository.create`, `PlayParticipantRepository.add_detail`
   - Validates at least one participant; only one winner
   - Redirects to `/` with flash success message
 
@@ -128,22 +151,27 @@ Work through phases in order. Write tests before implementation. Mark items done
   - `POST /players` with valid data creates player, returns row partial
   - `GET /players/<id>` returns play history and win count
 - [ ] Implement player routes + templates:
+  - Uses `PlayerRepository.get_all`, `PlayerRepository.create`, `PlayerRepository.get_by_id`
+  - Uses `PlayRepository.get_all_for_player` for player detail history
   - Players list with inline Add Player form (HTMX)
   - Player detail with play history
 
-- [ ] Write tests for game catalog routes:
+- [ ] Write tests for game catalog routes (mock repositories):
   - `GET /games` returns 200, lists all titles
   - `GET /games/<id>` returns game metadata, copies, and play history
   - `POST /games` with valid data creates a `BoardGame` record
 - [ ] Implement game catalog routes + templates:
+  - Uses `BoardGameRepository.get_all`, `BoardGameRepository.get_by_id`, `BoardGameRepository.create`
+  - Uses `GameCopyRepository.get_all_for_game`, `PlayRepository.get_all_for_game`
   - Catalog with expandable copy rows, expansion filter
   - Game detail page
   - Add game form (manual entry)
 
-- [ ] Write tests for maintenance flag:
-  - `POST /copies/<id>/maintenance` sets `availability_status = Maintenance` and saves `notes`
+- [ ] Write tests for maintenance flag (mock repositories):
+  - `POST /copies/<id>/maintenance` calls `GameCopyRepository.flag_maintenance` with status and notes
   - Returns updated scan result partial
-- [ ] Implement maintenance flag route (`POST /copies/<id>/maintenance`)
+- [ ] Implement maintenance flag route (`POST /copies/<id>/maintenance`):
+  - Uses `GameCopyRepository.flag_maintenance`
 
 - [ ] Run all tests — Phase 4 passes
 
