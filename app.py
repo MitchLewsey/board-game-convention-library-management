@@ -19,6 +19,6 @@ def create_app(test=False):
 
     db.init_app(app)
 
-    import lib.models
+    import lib.board_game
 
     return app
