@@ -19,7 +19,6 @@ def test_board_game_constructs():
         artist="Max Kosek, Vesna 'vesner' Redesiuk",
         is_expansion=False,
         base_game_id=None,
-        avg_rating=7.15,
     )
 
     assert game.name == "Pinched!"
@@ -33,7 +32,6 @@ def test_board_game_constructs():
     assert game.artist == "Max Kosek, Vesna 'vesner' Redesiuk"
     assert game.is_expansion is False
     assert game.base_game_id is None
-    assert game.avg_rating == 7.15
 
 def test_two_board_games_are_equal():
     game_1 = BoardGame(
@@ -50,7 +48,6 @@ def test_two_board_games_are_equal():
         artist="Max Kosek, Vesna 'vesner' Redesiuk",
         is_expansion=False,
         base_game_id=None,
-        avg_rating=7.15,
     )
 
     game_2 = BoardGame(
@@ -67,7 +64,6 @@ def test_two_board_games_are_equal():
         artist="Max Kosek, Vesna 'vesner' Redesiuk",
         is_expansion=False,
         base_game_id=None,
-        avg_rating=7.15,
     )
 
     assert game_1 == game_2
@@ -87,6 +83,5 @@ def test_stringify_board_game():
         artist="Max Kosek, Vesna 'vesner' Redesiuk",
         is_expansion=False,
         base_game_id=None,
-        avg_rating=7.15,
     )
-    assert str(game_1) == "BoardGame(1, Pinched!, 450685, 012345678901, 2, 5, 45, 60, Mighty Boards, Lucky Duck Games, Jonathan Gilmour-Long, David Gordon (I), Max Kosek, Vesna 'vesner' Redesiuk, False, None, 7.15)"
+    assert str(game_1) == "BoardGame(1, Pinched!, 450685, 012345678901, 2, 5, 45, 60, Mighty Boards, Lucky Duck Games, Jonathan Gilmour-Long, David Gordon (I), Max Kosek, Vesna 'vesner' Redesiuk, False, None)"

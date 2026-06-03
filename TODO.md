@@ -6,53 +6,46 @@ Work through phases in order. Write tests before implementation. Mark items done
 
 ## Phase 0 — Environment Setup
 
-- [ ] Create `requirements.txt` with: Flask, Flask-SQLAlchemy, Flask-Migrate, psycopg2-binary, python-dotenv, pytest, pytest-flask
-- [ ] Create `.env` with `DATABASE_URL`, `TEST_DATABASE_URL`, and `SECRET_KEY`
-- [ ] Create the PostgreSQL database and a separate test database
-- [ ] Set up a Python virtual environment and install requirements
+- [x] Create `requirements.txt` with: Flask, Flask-SQLAlchemy, Flask-Migrate, psycopg2-binary, python-dotenv, pytest, pytest-flask
+- [x] Create `.env` with `DATABASE_URL`, `TEST_DATABASE_URL`, and `SECRET_KEY`
+- [x] Create the PostgreSQL database and a separate test database
+- [x] Set up a Python virtual environment and install requirements
 
 ---
 
 ## Phase 1 — Database Layer
 
-- [ ] Write `lib/db.py` — create the SQLAlchemy instance (`db = SQLAlchemy()`)
-- [ ] Write `lib/models.py` — define ORM models for all 5 tables:
-  - `BoardGame` (with `factory_upc` unique)
-  - `GameCopy` (with `AvailabilityStatus` and `CopyCondition` enums)
-  - `Player`
-  - `Play` (`start_time`, `end_time`, `duration_minutes` — no `date_played`)
-  - `PlayParticipant`
+- [x] Write `lib/db.py` — create the SQLAlchemy instance (`db = SQLAlchemy()`)
+- [ ] Write one ORM model file per table in `lib/`:
+  - `lib/board_game.py` — `BoardGame` (with `factory_upc` unique)
+  - `lib/game_copy.py` — `GameCopy` (with `AvailabilityStatus` and `CopyCondition` enums)
+  - `lib/player.py` — `Player`
+  - `lib/play.py` — `Play` (`start_time`, `end_time`, `duration_minutes` — no `date_played`)
+  - `lib/play_participant.py` — `PlayParticipant`
 - [ ] Wire up Flask app factory in `app.py` (init db, register Flask-Migrate)
 - [ ] Run `flask db init`, `flask db migrate`, `flask db upgrade` to create tables
-- [ ] Write `tests/conftest.py`:
+- [x] Write `tests/conftest.py`:
   - App fixture using `TEST_DATABASE_URL`
   - DB fixture that creates and tears down tables per test
   - Session fixture for inserting test data
-- [ ] Write `tests/test_models.py` — one test per constraint:
-  - `BoardGame.factory_upc` is unique
-  - `BoardGame.base_game_id` self-referential FK (expansion points to base game)
-  - `GameCopy.availability_status` rejects values outside the enum
-  - `GameCopy.condition` rejects values outside the enum
-  - `Play.start_time` defaults to now; `end_time` is nullable
-  - `PlayParticipant` composite PK prevents duplicate player per play
-  - `PlayParticipant.rating` CHECK rejects values outside 1–10
+- [ ] Write one model test file per model in `tests/`:
+  - `tests/test_board_game_model.py` — constructs correctly, `factory_upc` is unique, self-referential FK (expansion → base game)
+  - `tests/test_game_copy_model.py` — `availability_status` rejects values outside enum, `condition` rejects values outside enum
+  - `tests/test_play_model.py` — `start_time` defaults to now, `end_time` is nullable
+  - `tests/test_play_participant_model.py` — composite PK prevents duplicate player per play, `rating` CHECK rejects values outside 1–10
 - [ ] Run tests — all model tests pass
-- [ ] Write `tests/test_repositories.py` — one test per repository method:
-  - `BoardGameRepository.find_by_upc` returns correct game; returns `None` for unknown UPC
-  - `BoardGameRepository.get_all` returns all games ordered by name
-  - `GameCopyRepository.count_available` returns correct count
-  - `GameCopyRepository.find_available` returns an Available copy; returns `None` when none exist
-  - `GameCopyRepository.find_in_play` returns an In Play copy
-  - `GameCopyRepository.flag_maintenance` sets status and saves notes
-  - `PlayerRepository.find_by_alias` returns correct player; returns `None` for unknown alias
-  - `PlayerRepository.find_or_create` returns existing player; creates new player if alias not found
-  - `PlayerRepository.find_with_open_plays` returns only players with `end_time IS NULL` for that game
-  - `PlayRepository.create` creates play with `start_time` set and `end_time` as `None`
-  - `PlayRepository.find_open` returns open play for game + player; returns `None` after close
-  - `PlayRepository.close` sets `end_time`, calculates `duration_minutes`
-  - `PlayParticipantRepository.create` creates participant row
-  - `PlayParticipantRepository.add_detail` updates score, winner flag, and rating
-- [ ] Write `lib/repositories.py` — implement all repository classes to pass the tests
+- [ ] Write one repository test file per repository in `tests/`:
+  - `tests/test_board_game_repository.py` — `all` returns all games, `find_by_upc` returns correct game; returns `None` for unknown UPC
+  - `tests/test_game_copy_repository.py` — `count_available`, `find_available` returns copy or `None`, `find_in_play`, `flag_maintenance` sets status and notes
+  - `tests/test_player_repository.py` — `find_by_alias` returns player or `None`, `find_or_create` returns existing or creates new, `find_with_open_plays`
+  - `tests/test_play_repository.py` — `create` sets `start_time` and `end_time` as `None`, `find_open`, `close` sets `end_time` and `duration_minutes`
+  - `tests/test_play_participant_repository.py` — `create` creates participant row, `add_detail` updates score, winner flag, and rating
+- [ ] Write one repository file per model in `lib/` — implement all classes to pass the tests:
+  - `lib/board_game_repository.py` — `BoardGameRepository`
+  - `lib/game_copy_repository.py` — `GameCopyRepository`
+  - `lib/player_repository.py` — `PlayerRepository`
+  - `lib/play_repository.py` — `PlayRepository`
+  - `lib/play_participant_repository.py` — `PlayParticipantRepository`
 - [ ] Run tests — all repository tests pass
 - [ ] Run seed files and verify data in psql:
   ```

@@ -17,7 +17,6 @@ class BoardGame(db.Model):
     artist       = db.Column(db.String(255))
     is_expansion = db.Column(db.Boolean,     nullable=False, default=False)
     base_game_id = db.Column(db.Integer,     db.ForeignKey('board_game.id', ondelete='SET NULL'))
-    avg_rating   = db.Column(db.Numeric(4, 2))
 
     def __eq__(self, other):
         game1 = {k: v for k, v in self.__dict__.items() if k != '_sa_instance_state'}
@@ -25,4 +24,4 @@ class BoardGame(db.Model):
         return game1 == game2
     
     def __repr__(self):
-        return f"BoardGame({self.id}, {self.name}, {self.bgg_id}, {self.factory_upc}, {self.min_players}, {self.max_players}, {self.min_time}, {self.max_time}, {self.publisher}, {self.designer}, {self.artist}, {self.is_expansion}, {self.base_game_id}, {self.avg_rating})"
+        return f"BoardGame({self.id}, {self.name}, {self.bgg_id}, {self.factory_upc}, {self.min_players}, {self.max_players}, {self.min_time}, {self.max_time}, {self.publisher}, {self.designer}, {self.artist}, {self.is_expansion}, {self.base_game_id})"

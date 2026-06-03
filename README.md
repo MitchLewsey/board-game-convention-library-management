@@ -13,7 +13,11 @@ A server-side rendered web app for managing a board game lending library at a co
 
 ## Architecture
 
-All database queries are centralised in `lib/repositories.py`. Routes import and call repository methods — never `db.session` directly. This keeps routes thin and makes queries mockable in tests.
+Each model and repository has its own file in `lib/`:
+- Models: `board_game.py`, `game_copy.py`, `player.py`, `play.py`, `play_participant.py`
+- Repositories: `board_game_repository.py`, `game_copy_repository.py`, `player_repository.py`, `play_repository.py`, `play_participant_repository.py`
+
+Routes instantiate repository classes and call their methods — never `db.session` directly. Repositories are instance-based: `BoardGameRepository().all()`. This keeps routes thin and makes queries mockable in tests.
 
 See `ARCHITECTURE.md` for the full schema, project structure, and conventions.
 See `PRD.md` for user flows and requirements.
