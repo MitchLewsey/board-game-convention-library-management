@@ -63,7 +63,7 @@ game library, game, convention owner, convention attendee, condition, shelf loca
 | Tables                | Columns             |
 | --------------------- | ------------------  |
 | board_game            |id, name, bgg_id, min_players, max_players, min_time, max_time, publisher, designer, artist, is_expansion, base_game_id
-| game_copy             | id, board_game_id, factory_upc, availability_status, condition, notes, shelf_location
+| game_copy             | id, board_game_id, availability_status, condition, notes, shelf_location
 | player                | id, name, alias
 | play                  | id, board_game_id, date_played, duration minutes
 | play_participant      | play_id, player_id, is_winner, rating
@@ -93,7 +93,8 @@ Column Name         |   Type                | Details
 id                  |   SERIAL              |   primary key
 board_game_id       |   INTEGER             |   not null, references board_game(id), on delete cascade
 availability_status |   availability_status |   not null, default 'Available', enum
-condition           |   VARCHAR(50)         |   'Excellent', 'Good, 'Fair', 'Poor'
+condition           |   copy_condition      |   'Excellent', 'Good', 'Fair', 'Poor'
+notes               |   TEXT                |
 shelf_location      |   VARCHAR(50)         |   
 
 ### player

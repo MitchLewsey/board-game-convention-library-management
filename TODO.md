@@ -28,7 +28,7 @@ Work through phases in order. Write tests before implementation. Mark items done
   - App fixture using `TEST_DATABASE_URL`
   - DB fixture that creates and tears down tables per test
   - Session fixture for inserting test data
-- [ ] Write one model test file per model in `tests/`:
+- [] Write one model test file per model in `tests/`:
   - `tests/test_board_game_model.py` — constructs correctly, `factory_upc` is unique, self-referential FK (expansion → base game)
   - `tests/test_game_copy_model.py` — `availability_status` rejects values outside enum, `condition` rejects values outside enum
   - `tests/test_play_model.py` — `start_time` defaults to now, `end_time` is nullable
