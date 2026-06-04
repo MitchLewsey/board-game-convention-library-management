@@ -152,6 +152,10 @@ All data access goes through repository classes (`lib/repositories.py`). Routes 
 
 **Add game (MVP: manual entry):**
 - Form to enter all `board_game` fields manually.
+- "Is expansion?" checkbox — when checked, a base game search field appears.
+- Librarian types a game name into the search field; HTMX calls `GET /games/search?q=` and shows matching titles as a dropdown.
+- Librarian selects a title from the dropdown; its `id` is stored in a hidden `base_game_id` field.
+- On submit, `base_game_id` is saved. The librarian never sees or types a raw ID.
 - Stretch: auto-fill from BGG API by entering a BGG ID.
 
 ---

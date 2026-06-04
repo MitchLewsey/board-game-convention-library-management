@@ -1,5 +1,5 @@
 import pytest
-from sqlalchemy.exc import IntegrityError
+from lib.exceptions import DuplicateUPCError, InvalidBaseGameError
 from lib.board_game import BoardGame
 from lib.board_game_repository import BoardGameRepository
 
@@ -7,7 +7,7 @@ from lib.board_game_repository import BoardGameRepository
 @pytest.fixture
 def seed_board_games(db):
     db.session.add_all([
-        BoardGame(name="Pinched!",       bgg_id=450685, factory_upc="012345678901",  min_players=2, max_players=5, min_time=45, max_time=60,  publisher="Mighty Boards, Lucky Duck Games", designer="Jonathan Gilmour-Long, David Gordon (I)", artist="Max Kosek, Vesna 'vesner' Redesiuk",        is_expansion=False),
+        BoardGame(name="Pinched!",       bgg_id=450685, factory_upc="5350705999709",  min_players=2, max_players=5, min_time=45, max_time=60,  publisher="Mighty Boards, Lucky Duck Games", designer="Jonathan Gilmour-Long, David Gordon (I)", artist="Max Kosek, Vesna 'vesner' Redesiuk",        is_expansion=False),
         BoardGame(name="Catan",          bgg_id=13,     factory_upc="029877030415",  min_players=3, max_players=4, min_time=60, max_time=120, publisher="KOSMOS",                          designer="Klaus Teuber",                            artist="Michael Menzel",                           is_expansion=False),
         BoardGame(name="Ticket to Ride", bgg_id=9209,   factory_upc="824968717912",  min_players=2, max_players=5, min_time=45, max_time=75,  publisher="Days of Wonder",                  designer="Alan R. Moon",                            artist="Julien Delval, Cyrille Daujean",            is_expansion=False),
         BoardGame(name="Pandemic",       bgg_id=30549,  factory_upc="681706711003",  min_players=2, max_players=4, min_time=45, max_time=60,  publisher="Z-Man Games",                     designer="Matt Leacock",                            artist="Christian Hanisch, Josh Cappel",            is_expansion=False),
@@ -22,7 +22,7 @@ def test_all_returns_all_board_games(db, seed_board_games):
     repo = BoardGameRepository()
     games = repo.all()
     assert games == [
-        BoardGame(id=1, name="Pinched!",       bgg_id=450685, factory_upc="012345678901",  min_players=2, max_players=5, min_time=45, max_time=60,  publisher="Mighty Boards, Lucky Duck Games", designer="Jonathan Gilmour-Long, David Gordon (I)", artist="Max Kosek, Vesna 'vesner' Redesiuk",        is_expansion=False, base_game_id=None),
+        BoardGame(id=1, name="Pinched!",       bgg_id=450685, factory_upc="5350705999709",  min_players=2, max_players=5, min_time=45, max_time=60,  publisher="Mighty Boards, Lucky Duck Games", designer="Jonathan Gilmour-Long, David Gordon (I)", artist="Max Kosek, Vesna 'vesner' Redesiuk",        is_expansion=False, base_game_id=None),
         BoardGame(id=2, name="Catan",          bgg_id=13,     factory_upc="029877030415",  min_players=3, max_players=4, min_time=60, max_time=120, publisher="KOSMOS",                          designer="Klaus Teuber",                            artist="Michael Menzel",                           is_expansion=False, base_game_id=None),
         BoardGame(id=3, name="Ticket to Ride", bgg_id=9209,   factory_upc="824968717912",  min_players=2, max_players=5, min_time=45, max_time=75,  publisher="Days of Wonder",                  designer="Alan R. Moon",                            artist="Julien Delval, Cyrille Daujean",            is_expansion=False, base_game_id=None),
         BoardGame(id=4, name="Pandemic",       bgg_id=30549,  factory_upc="681706711003",  min_players=2, max_players=4, min_time=45, max_time=60,  publisher="Z-Man Games",                     designer="Matt Leacock",                            artist="Christian Hanisch, Josh Cappel",            is_expansion=False, base_game_id=None),
@@ -110,8 +110,104 @@ def test_create_board_game_with_duplicate_upc_raises_error(db, seed_board_games)
         base_game_id=None
         )
     
-    with pytest.raises(IntegrityError) as e:  
+    with pytest.raises(DuplicateUPCError) as e:  
         repo.create(duplicate_board_game)
     error_message = str(e.value)
 
-    assert error_message == f"Duplicate UPC ({duplicate_board_game.factory.upc}) - {duplicate_board_game.name} already exists"
+    assert error_message == f"Duplicate UPC ({duplicate_board_game.factory_upc}) already exists for game {duplicate_board_game.name}"
+
+def test_create_expansion_linked_to_base_game(db, seed_board_games):
+    repo = BoardGameRepository()
+    res_arcana = BoardGame(
+    name="Res Arcana",
+    bgg_id=262712,
+    factory_upc="850004236116",
+    min_players=2,
+    max_players=4,
+    min_time=30,
+    max_time=60,
+    publisher="Sand Castle Games",
+    designer="Thomas Lehmann",
+    artist="Julien Delval",
+    is_expansion=False,
+    base_game_id=None
+    )
+    repo.create(res_arcana)
+
+    expansion = BoardGame(
+    name="Perlae Imperii",
+    bgg_id=262712,
+    factory_upc="850004236550",
+    min_players=2,
+    max_players=4,
+    min_time=30,
+    max_time=60,
+    publisher="Sand Castle Games",
+    designer="Thomas Lehmann",
+    artist="Julien Delval",
+    is_expansion=True,
+    base_game_id=res_arcana.id
+    )
+    repo.create(expansion)
+
+    db.session.close()
+
+    base_game = repo.find_by_upc("850004236116")
+    base_game_expansion = repo.find_by_upc("850004236550")
+
+    assert base_game_expansion.base_game_id == base_game.id
+
+def test_create_expansion_with_invalid_base_game_errors(db, seed_board_games):
+    repo = BoardGameRepository()
+
+    expansion = BoardGame(
+    name="Perlae Imperii",
+    bgg_id=262712,
+    factory_upc="850004236550",
+    min_players=2,
+    max_players=4,
+    min_time=30,
+    max_time=60,
+    publisher="Sand Castle Games",
+    designer="Thomas Lehmann",
+    artist="Julien Delval",
+    is_expansion=True,
+    base_game_id=8
+    )
+
+    with pytest.raises(InvalidBaseGameError) as e:
+        repo.create(expansion)
+
+    error_message = str(e.value)
+
+    assert error_message == f"Base game with ID {expansion.base_game_id} does not exist. The expansion has not been added"
+
+def test_find_by_name_single_result(db, seed_board_games):
+    repo = BoardGameRepository()
+    game = repo.find_by_name("Pinched!")
+
+    assert game[0].name == "Pinched!"
+    assert game[0].factory_upc == "5350705999709"
+
+def test_find_by_name_multiple_results(db, seed_board_games):
+    repo = BoardGameRepository()
+    games = repo.find_by_name("an")
+
+    assert games[0].name == "Catan"
+    assert games[1].name == "Pandemic"
+    assert games[2].name == "Wingspan"
+
+def test_find_by_name_insensitive_to_case(db, seed_board_games):
+    repo = BoardGameRepository()
+    games = repo.find_by_name("An")
+
+    assert games[0].name == "Catan"
+    assert games[1].name == "Pandemic"
+    assert games[2].name == "Wingspan"
+
+
+
+
+
+
+

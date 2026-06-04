@@ -35,7 +35,7 @@ Work through phases in order. Write tests before implementation. Mark items done
   - `tests/test_play_participant_model.py` — composite PK prevents duplicate player per play, `rating` CHECK rejects values outside 1–10
 - [ ] Run tests — all model tests pass
 - [ ] Write one repository test file per repository in `tests/`:
-  - `tests/test_board_game_repository.py` — `all` returns all games, `find_by_upc` returns correct game; returns `None` for unknown UPC
+  - `tests/test_board_game_repository.py` — `all` returns all games, `find_by_upc` returns correct game; returns `None` for unknown UPC, `find_by_name` returns partial name matches ordered by name
   - `tests/test_game_copy_repository.py` — `count_available`, `find_available` returns copy or `None`, `find_in_play`, `flag_maintenance` sets status and notes
   - `tests/test_player_repository.py` — `find_by_alias` returns player or `None`, `find_or_create` returns existing or creates new, `find_with_open_plays`
   - `tests/test_play_repository.py` — `create` sets `start_time` and `end_time` as `None`, `find_open`, `close` sets `end_time` and `duration_minutes`
@@ -152,13 +152,15 @@ Work through phases in order. Write tests before implementation. Mark items done
 - [ ] Write tests for game catalog routes (mock repositories):
   - `GET /games` returns 200, lists all titles
   - `GET /games/<id>` returns game metadata, copies, and play history
+  - `GET /games/search?q=` returns matching titles as HTML partial
   - `POST /games` with valid data creates a `BoardGame` record
 - [ ] Implement game catalog routes + templates:
   - Uses `BoardGameRepository.get_all`, `BoardGameRepository.get_by_id`, `BoardGameRepository.create`
   - Uses `GameCopyRepository.get_all_for_game`, `PlayRepository.get_all_for_game`
   - Catalog with expandable copy rows, expansion filter
   - Game detail page
-  - Add game form (manual entry)
+  - Add game form with "Is expansion?" checkbox and base game typeahead (`BoardGameRepository.find_by_name` → `GET /games/search?q=` partial)
+  - `GET /games/search?q=` route returns `partials/game_search_result.html` for HTMX typeahead
 
 - [ ] Write tests for maintenance flag (mock repositories):
   - `POST /copies/<id>/maintenance` calls `GameCopyRepository.flag_maintenance` with status and notes
