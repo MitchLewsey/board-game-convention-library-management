@@ -86,7 +86,6 @@ designer        |   VARCHAR(255)    |
 artist          |   VARCHAR(255)    |
 is_expansion    |   BOOLEAN         |   not null, default false
 base_game_id    |   INTEGER         |   references board_game(id)
-avg_rating      |   NUMERIC(4, 2)   |
 
 ### game_copy
 Column Name         |   Type                | Details
@@ -148,8 +147,7 @@ CREATE TABLE board_game (
     designer        VARCHAR(255),
     artist          VARCHAR(255),
     is_expansion    BOOLEAN         NOT NULL DEFAULT FALSE,
-    base_game_id    INTEGER         REFERENCES board_game(id) ON DELETE SET NULL,
-    avg_rating      NUMERIC(4, 2)   CHECK (avg_rating BETWEEN 0 AND 10)
+    base_game_id    INTEGER         REFERENCES board_game(id) ON DELETE SET NULL
 );
 
 CREATE TABLE game_copy (

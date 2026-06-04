@@ -26,9 +26,17 @@ boardgame-convention-library-management/
 ├── TODO.md
 ├── CLAUDE.md
 ├── lib/
-│   ├── db.py               # SQLAlchemy instance
-│   ├── models.py           # ORM models for all 5 tables
-│   └── repositories.py     # Repository classes — all database queries live here
+│   ├── db.py                       # SQLAlchemy instance
+│   ├── board_game.py               # BoardGame ORM model
+│   ├── game_copy.py                # GameCopy ORM model
+│   ├── player.py                   # Player ORM model
+│   ├── play.py                     # Play ORM model
+│   ├── play_participant.py         # PlayParticipant ORM model
+│   ├── board_game_repository.py    # BoardGameRepository
+│   ├── game_copy_repository.py     # GameCopyRepository
+│   ├── player_repository.py        # PlayerRepository
+│   ├── play_repository.py          # PlayRepository
+│   └── play_participant_repository.py  # PlayParticipantRepository
 ├── templates/
 │   ├── base.html           # Shared layout (Tailwind CDN, HTMX, nav)
 │   ├── dashboard.html      # Inventory overview
@@ -47,7 +55,9 @@ boardgame-convention-library-management/
 │       └── participant_row.html
 ├── static/                 # Minimal static assets
 ├── seeds/
-│   └── seed.py             # Sample games and players
+│   ├── seeds_board_game.sql
+│   ├── seeds_game_copy.sql
+│   └── seeds_player.sql
 └── tests/
 ```
 
@@ -78,8 +88,7 @@ CREATE TABLE board_game (
     designer        VARCHAR(255),
     artist          VARCHAR(255),
     is_expansion    BOOLEAN         NOT NULL DEFAULT FALSE,
-    base_game_id    INTEGER         REFERENCES board_game(id) ON DELETE SET NULL,
-    avg_rating      NUMERIC(4, 2)   CHECK (avg_rating BETWEEN 0 AND 10)
+    base_game_id    INTEGER         REFERENCES board_game(id) ON DELETE SET NULL
 );
 
 CREATE TABLE game_copy (
@@ -152,29 +161,37 @@ The `POST /scan` route queries `board_game` by `factory_upc`, then counts availa
 
 ## Repository Layer
 
-All database queries are centralised in `lib/repositories.py`. Routes never call `db.session` directly — they call repository methods instead. This keeps routes thin and makes queries mockable in tests.
+Each model has its own repository file in `lib/`. Routes never call `db.session` directly — they instantiate a repository and call its methods instead. This keeps routes thin and makes queries mockable in tests.
 
-| Repository | Responsibility |
-|---|---|
-| `BoardGameRepository` | Look up games by UPC or ID, list all, create |
-| `GameCopyRepository` | Count/find available or in-play copies, flag maintenance, create |
-| `PlayerRepository` | Find by alias, find-or-create on check-out, list players with open plays |
-| `PlayRepository` | Create on check-out, find open session, close on check-in |
-| `PlayParticipantRepository` | Add participant on check-out, add score/winner/rating detail |
+| File | Repository | Responsibility |
+|---|---|---|
+| `lib/board_game_repository.py` | `BoardGameRepository` | Look up games by UPC or ID, list all, create |
+| `lib/game_copy_repository.py` | `GameCopyRepository` | Count/find available or in-play copies, flag maintenance, create |
+| `lib/player_repository.py` | `PlayerRepository` | Find by alias, find-or-create on check-out, list players with open plays |
+| `lib/play_repository.py` | `PlayRepository` | Create on check-out, find open session, close on check-in |
+| `lib/play_participant_repository.py` | `PlayParticipantRepository` | Add participant on check-out, add score/winner/rating detail |
+
+Repositories are **instance-based** — instantiate before calling methods:
+
+```python
+repo = BoardGameRepository()
+game = repo.find_by_upc(upc)
+```
 
 **Example — scan route using repositories:**
 
 ```python
-from lib.repositories import BoardGameRepository, GameCopyRepository
+from lib.board_game_repository import BoardGameRepository
+from lib.game_copy_repository import GameCopyRepository
 
 @app.route("/scan", methods=["POST"])
 def scan():
     upc = request.form["upc"]
-    game = BoardGameRepository.find_by_upc(upc)
+    game = BoardGameRepository().find_by_upc(upc)
     if not game:
         return render_template("partials/scan_result.html", error="Unknown barcode.")
-    available = GameCopyRepository.count_available(game.id)
-    total = GameCopyRepository.count_total(game.id)
+    available = GameCopyRepository().count_available(game.id)
+    total = GameCopyRepository().count_total(game.id)
     return render_template("partials/scan_result.html", game=game, available=available, total=total)
 ```
 
@@ -182,10 +199,10 @@ def scan():
 
 ```python
 from unittest.mock import patch
-from lib.models import BoardGame
+from lib.board_game import BoardGame
 
 def test_scan_unknown_upc(client):
-    with patch("app.BoardGameRepository.find_by_upc", return_value=None):
+    with patch.object(BoardGameRepository, "find_by_upc", return_value=None):
         response = client.post("/scan", data={"upc": "000000000000"})
         assert b"Unknown barcode" in response.data
 ```
@@ -195,7 +212,10 @@ def test_scan_unknown_upc(client):
 ## Key Conventions
 
 - All routes return full pages **or** HTMX partials. Partials omit the base layout and are identified by the `HX-Request` header (Flask: `request.headers.get('HX-Request')`).
-- Routes import and call repository methods — never `db.session` directly.
+- Routes instantiate repository classes and call their methods — never `db.session` directly.
+- Each model lives in its own file (`lib/board_game.py`, `lib/player.py`, etc.).
+- Each repository lives in its own file (`lib/board_game_repository.py`, `lib/player_repository.py`, etc.).
+- Repositories are instance-based: `BoardGameRepository().all()`, not `BoardGameRepository.all()`.
 - Status badges use Tailwind utility classes: green for Available, yellow for In Play, red for Maintenance.
 - No JavaScript build step — Tailwind Play CDN and HTMX are loaded from CDN `<script>` tags in `base.html`.
 - Database migrations managed via Flask-Migrate (`flask db init / migrate / upgrade`).

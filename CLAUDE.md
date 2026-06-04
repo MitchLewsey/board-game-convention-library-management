@@ -22,3 +22,6 @@ Board game library management SSR web app built for convention use.
 - **Constraint:** Games never leave the library. No reservation system needed.
 - **Operator:** Single librarian on a laptop. No authentication for MVP.
 - **Partial responses:** Routes that are called by HTMX should detect the `HX-Request` header and return only the relevant partial template, not the full base layout.
+- **One file per model:** each ORM model lives in its own file — `lib/board_game.py`, `lib/game_copy.py`, `lib/player.py`, `lib/play.py`, `lib/play_participant.py`.
+- **One file per repository:** each repository lives in its own file — `lib/board_game_repository.py`, `lib/game_copy_repository.py`, `lib/player_repository.py`, `lib/play_repository.py`, `lib/play_participant_repository.py`.
+- **Repositories are instance-based:** always instantiate before calling methods — `BoardGameRepository().all()`, not `BoardGameRepository.all()`.
