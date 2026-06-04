@@ -1,4 +1,5 @@
 import pytest
+from sqlalchemy.exc import IntegrityError
 from lib.board_game import BoardGame
 from lib.board_game_repository import BoardGameRepository
 
@@ -55,4 +56,62 @@ def test_find_board_game_by_nonexistant_factory_upc_returns_none(db, seed_board_
     ark_nova = repo.find_by_upc("0850000576407")
     assert ark_nova is None
 
+def test_create_board_game(db, seed_board_games):
+    repo = BoardGameRepository()
+    board_game = BoardGame(
+        name="Ark Nova",
+        bgg_id=342942,
+        factory_upc="0850000576407",
+        min_players=1,
+        max_players=4,
+        min_time=90,
+        max_time=150,
+        publisher="Feuerland Spiele, Capstone Games",
+        designer="Mathias Wigge",
+        artist="Steffen Bieker, Loïc Billiau, Dennis Lohausen",
+        is_expansion=False,
+        base_game_id=None
+        )
+    repo.create(board_game)
 
+    db.session.close()
+
+    ark_nova = repo.find_by_upc("0850000576407")
+    assert ark_nova == BoardGame(
+        id=8,
+        name="Ark Nova",
+        bgg_id=342942,
+        factory_upc="0850000576407",
+        min_players=1,
+        max_players=4,
+        min_time=90,
+        max_time=150,
+        publisher="Feuerland Spiele, Capstone Games",
+        designer="Mathias Wigge",
+        artist="Steffen Bieker, Loïc Billiau, Dennis Lohausen",
+        is_expansion=False,
+        base_game_id=None
+        )
+    
+def test_create_board_game_with_duplicate_upc_raises_error(db, seed_board_games):
+    repo = BoardGameRepository()
+    duplicate_board_game = BoardGame(
+        name="Catan Dupe",
+        bgg_id=999,
+        factory_upc="029877030415",
+        min_players=6,
+        max_players=9,
+        min_time=99,
+        max_time=999,
+        publisher="KOSMOS dupe",
+        designer="Klaus Teuber dupe",
+        artist="Michael Menzel dupe",
+        is_expansion=False,
+        base_game_id=None
+        )
+    
+    with pytest.raises(IntegrityError) as e:  
+        repo.create(duplicate_board_game)
+    error_message = str(e.value)
+
+    assert error_message == f"Duplicate UPC ({duplicate_board_game.factory.upc}) - {duplicate_board_game.name} already exists"
