@@ -69,4 +69,11 @@ def test_find_available_returns_empty_list_if_none_available(db, seed_board_game
     repo = GameCopyRepository()
     available_games_copies = repo.find_available(2)
     assert available_games_copies == []
-    
+
+def test_find_maintenance_copies(db, seed_board_games_game_copies):
+    repo = GameCopyRepository()
+    maintenance_games_copies = repo.find_maintenance()
+    assert maintenance_games_copies == [
+        GameCopy(id=3,  board_game_id=2,    availability_status="Maintenance",  condition="Poor",       notes="Missing tokens",                 shelf_location="B2"),
+        GameCopy(id=6,  board_game_id=3,    availability_status="Maintenance",  condition="Poor",       notes="Box broken",                     shelf_location="C4")
+    ]

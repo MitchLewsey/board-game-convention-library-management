@@ -39,5 +39,15 @@ class GameCopyRepository:
         ).scalars().all()
         )
     
+    def find_maintenance(self) -> list[GameCopy]:
+        return list(
+            db.session.execute(
+            db.select(GameCopy).
+            where(
+                GameCopy.availability_status == 'Maintenance'
+            )
+        ).scalars().all()
+        )
+    
 
     
