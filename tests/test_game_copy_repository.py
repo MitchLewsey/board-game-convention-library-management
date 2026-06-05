@@ -50,3 +50,23 @@ def test_count_available_copies_returns_correctly_number_of_available_copies(db,
     assert repo.count_available(2) == 0
     assert repo.count_available(3) == 1
 
+def test_find_available_returns_single_copy(db, seed_board_games_game_copies):
+    repo = GameCopyRepository()
+    available_games_copies = repo.find_available(3)
+    assert available_games_copies == [
+        GameCopy(id=7,  board_game_id=3,    availability_status="Available",    condition="Excellent",  notes="Brand new",                      shelf_location="C4")
+        ]
+
+def test_find_available_returns_multiple_copies(db, seed_board_games_game_copies):
+    repo = GameCopyRepository()
+    available_games_copies = repo.find_available(1)
+    assert available_games_copies == [
+        GameCopy(id=1,  board_game_id=1,    availability_status="Available",    condition="Good",       notes="Slightly faded",                 shelf_location="A1"),
+        GameCopy(id=2,  board_game_id=1,    availability_status="Available",    condition="Fair",       notes="Box breaking, damaged cards",    shelf_location="A1")
+        ]
+
+def test_find_available_returns_empty_list_if_none_available(db, seed_board_games_game_copies):
+    repo = GameCopyRepository()
+    available_games_copies = repo.find_available(2)
+    assert available_games_copies == []
+    
