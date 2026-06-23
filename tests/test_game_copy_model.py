@@ -1,7 +1,7 @@
 from lib.game_copy import GameCopy
 
 """
-Board Game constructs with all related attributes
+GameCopy constructs with all related attributes
 """
 
 def test_game_copy_constructs():

@@ -33,8 +33,6 @@ class GameCopy(db.Model):
     shelf_location: Mapped[str | None] = mapped_column(db.String(50))
 
     def __eq__(self, other):
-        if not isinstance(other, GameCopy):
-            return NotImplemented
         copy1 = {k: v for k, v in self.__dict__.items() if k != '_sa_instance_state'}
         copy2 = {k: v for k, v in other.__dict__.items() if k != '_sa_instance_state'}
         return copy1 == copy2
