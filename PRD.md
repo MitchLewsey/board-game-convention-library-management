@@ -66,10 +66,9 @@ All data access goes through repository classes (`lib/repositories.py`). Routes 
 2. Player clicks "Check Out" — HTMX swaps in an alias text input within the result card.
 3. Player types their alias and submits.
 4. Server finds or creates the matching `player` record by alias.
-5. Server creates a `play` record (`board_game_id`, `start_time = NOW()`).
-6. Server creates a `play_participant` row (`play_id`, `player_id`).
-7. Server sets one `game_copy` WHERE `board_game_id = ? AND availability_status = 'Available'` to `'In Play'`.
-8. Result card confirms: "Checked out to [alias]. Good luck!"
+5. Server creates a `play` record (`board_game_id`, `start_time = NOW()`, `checked_out_by_player_id = player.id`).
+6. Server sets one `game_copy` WHERE `board_game_id = ? AND availability_status = 'Available'` to `'In Play'`.
+7. Result card confirms: "Checked out to [alias]. Good luck!"
 
 **Guard:** If no copies are available, the "Check Out" button is not shown. Instead: "All copies are currently in play."
 
@@ -103,7 +102,7 @@ All data access goes through repository classes (`lib/repositories.py`). Routes 
    - **Date played** — defaults to today
    - **Duration** — in minutes (optional)
 4. Adds participants one at a time:
-   - Types a player name or alias; HTMX typeahead suggests matching players.
+   - Types an alias; HTMX typeahead suggests matching players.
    - Selects or creates a new player.
    - Enters score (optional), checks "Winner" checkbox, and gives the game a rating out of 10 (optional).
    - Clicks "Add Player" — the participant row appears below via HTMX without a page reload.
@@ -123,11 +122,11 @@ All data access goes through repository classes (`lib/repositories.py`). Routes 
 **Entry point:** `/players`
 
 **List view:**
-- Table of all players (name, alias, total plays, total wins).
+- Table of all players (alias, total plays, total wins).
 - "Add Player" button opens an inline form via HTMX.
 
 **Add player flow:**
-1. Librarian fills in name (required) and alias (optional).
+1. Librarian fills in alias (required).
 2. Submits; new player row appears in the table via HTMX.
 
 **Player detail (`/players/<id>`):**

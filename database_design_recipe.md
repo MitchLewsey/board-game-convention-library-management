@@ -64,8 +64,8 @@ game library, game, convention owner, convention attendee, condition, shelf loca
 | --------------------- | ------------------  |
 | board_game            |id, name, bgg_id, min_players, max_players, min_time, max_time, publisher, designer, artist, is_expansion, base_game_id
 | game_copy             | id, board_game_id, availability_status, condition, notes, shelf_location
-| player                | id, name, alias
-| play                  | id, board_game_id, date_played, duration minutes
+| player                | id, alias
+| play                  | id, board_game_id, checked_out_by_player_id, start_time, end_time, duration_minutes
 | play_participant      | play_id, player_id, is_winner, rating
 
 ## Table & Column Types
@@ -101,17 +101,17 @@ shelf_location      |   VARCHAR(50)         |
 Column Name         |   Type            | Details
 | ------------------| ------------------|------------------|
 id                  |   SERIAL          | primary key
-name                |   VARCHAR(255)    | 
 alias               |   VARCHAR(100)    | not null
 
 ### play
-Column Name         |   Type            | Details
-| ------------------| ------------------|------------------|
-id                  |   SERIAL          | primary key
-board_game_id       |   INTEGER         | not null references board_game(id) on delete restrict
-date_played         |   DATE            | not null default current_date
-duration_minutes    |   SMALLINT        |
-start_time          
+Column Name              |   Type        | Details
+| -----------------------| --------------|------------------|
+id                       |   SERIAL      | primary key
+board_game_id            |   INTEGER     | not null references board_game(id) on delete restrict
+checked_out_by_player_id |   INTEGER     | references player(id) on delete restrict
+start_time               |   TIMESTAMP   | not null default now()
+end_time                 |   TIMESTAMP   |
+duration_minutes         |   SMALLINT    |
 
 ### play_participant
 Column Name         |   Type            | Details
@@ -162,16 +162,16 @@ CREATE TABLE game_copy (
 
 CREATE TABLE player (
     id      SERIAL          PRIMARY KEY,
-    name    VARCHAR(255)    NOT NULL,
-    alias   VARCHAR(100)
+    alias   VARCHAR(100)    NOT NULL
 );
 
 CREATE TABLE play (
-    id                SERIAL      PRIMARY KEY,
-    board_game_id     INTEGER     NOT NULL REFERENCES board_game(id) ON DELETE RESTRICT,
-    start_time        TIMESTAMP   NOT NULL DEFAULT NOW(),
-    end_time          TIMESTAMP,
-    duration_minutes  SMALLINT    -- stored on check-in: EXTRACT(EPOCH FROM (end_time - start_time)) / 60
+    id                        SERIAL      PRIMARY KEY,
+    board_game_id             INTEGER     NOT NULL REFERENCES board_game(id) ON DELETE RESTRICT,
+    checked_out_by_player_id  INTEGER     REFERENCES player(id) ON DELETE RESTRICT,  -- the player who checked the game out
+    start_time                TIMESTAMP   NOT NULL DEFAULT NOW(),
+    end_time                  TIMESTAMP,
+    duration_minutes          SMALLINT    -- stored on check-in: EXTRACT(EPOCH FROM (end_time - start_time)) / 60
 );
 
 CREATE TABLE play_participant (

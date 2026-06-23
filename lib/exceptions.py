@@ -3,3 +3,6 @@ class DuplicateUPCError(Exception):
 
 class InvalidBaseGameError(Exception):
     pass
+
+class DuplicateAliasError(Exception):
+    pass

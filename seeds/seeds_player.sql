@@ -8,10 +8,10 @@ TRUNCATE player CASCADE;
 DROP TABLE IF EXISTS player;
 DROP SEQUENCE IF EXISTS player_id_seq;
 
-INSERT INTO player (name, alias)
+INSERT INTO player (alias)
 VALUES
-    ('Alice',   'ali'),
-    ('Bob',     'bobby'),
-    ('Charlie', 'chaz'),
-    ('Diana',   'di'),
-    ('Ed',      'ed');
+    ('ali'),
+    ('bobby'),
+    ('chaz'),
+    ('di'),
+    ('ed');

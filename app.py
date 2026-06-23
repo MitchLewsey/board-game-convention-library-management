@@ -20,5 +20,8 @@ def create_app(test=False):
     db.init_app(app)
 
     import lib.board_game
+    import lib.game_copy
+    import lib.player
+    import lib.play
 
     return app

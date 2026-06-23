@@ -9,6 +9,8 @@ class Play(db.Model):
     id: Mapped[int] = mapped_column(primary_key=True)
     board_game_id: Mapped[int] = mapped_column(
         db.ForeignKey('board_game.id', ondelete='RESTRICT'), nullable=False)
+    checked_out_by_player_id: Mapped[int | None] = mapped_column(
+        db.ForeignKey('player.id', ondelete='RESTRICT'))
     start_time: Mapped[datetime] = mapped_column(server_default=func.now())
     end_time: Mapped[datetime | None]
     duration_minutes: Mapped[int | None] = mapped_column(db.SmallInteger)
@@ -19,6 +21,6 @@ class Play(db.Model):
         return play1 == play2
     
     def __repr__(self):
-        return f"Play({self.id}, {self.board_game_id}, {self.start_time}, {self.end_time}, {self.duration_minutes})"
+        return f"Play({self.id}, {self.board_game_id}, {self.checked_out_by_player_id}, {self.start_time}, {self.end_time}, {self.duration_minutes})"
 
 

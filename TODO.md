@@ -20,7 +20,7 @@ Work through phases in order. Write tests before implementation. Mark items done
   - `lib/board_game.py` — `BoardGame` (with `factory_upc` unique)
   - `lib/game_copy.py` — `GameCopy` (with `AvailabilityStatus` and `CopyCondition` enums)
   - `lib/player.py` — `Player`
-  - `lib/play.py` — `Play` (`start_time`, `end_time`, `duration_minutes` — no `date_played`)
+  - `lib/play.py` — `Play` (`checked_out_by_player_id`, `start_time`, `end_time`, `duration_minutes` — no `date_played`)
   - `lib/play_participant.py` — `PlayParticipant`
 - [ ] Wire up Flask app factory in `app.py` (init db, register Flask-Migrate)
 - [ ] Run `flask db init`, `flask db migrate`, `flask db upgrade` to create tables
@@ -38,7 +38,7 @@ Work through phases in order. Write tests before implementation. Mark items done
   - `tests/test_board_game_repository.py` — `all` returns all games, `find_by_upc` returns correct game; returns `None` for unknown UPC, `find_by_name` returns partial name matches ordered by name
   - `tests/test_game_copy_repository.py` — `count_available`, `find_available` returns copies or an empty list, `find_in_play`, `flag_maintenance` sets status and notes
   - `tests/test_player_repository.py` — `find_by_alias` returns player or `None`, `find_or_create` returns existing or creates new, `find_with_open_plays`
-  - `tests/test_play_repository.py` — `create` sets `start_time` to the current time and leaves `end_time` as `None`, `find_open`, `close` sets `end_time` and `duration_minutes`
+  - `tests/test_play_repository.py` — `create` sets `start_time` to the current time, stores `checked_out_by_player_id`, and leaves `end_time` as `None`, `find_open` matches on game + `checked_out_by_player_id`, `close` sets `end_time` and `duration_minutes`
   - `tests/test_play_participant_repository.py` — `create` creates participant row, `add_detail` updates score, winner flag, and rating
 - [ ] Write one repository file per model in `lib/` — implement all classes to pass the tests:
   - `lib/board_game_repository.py` — `BoardGameRepository`
@@ -86,12 +86,12 @@ Work through phases in order. Write tests before implementation. Mark items done
   - Returns `partials/scan_result.html` (no base layout when `HX-Request` header present)
 
 - [ ] Write tests for check-out (mock repositories):
-  - `POST /games/<id>/checkout` with valid alias creates a `Play` and `PlayParticipant`
+  - `POST /games/<id>/checkout` with valid alias creates a `Play` with `checked_out_by_player_id`
   - Sets one `GameCopy` to `In Play`
   - Unknown alias creates a new `Player` record via `PlayerRepository.find_or_create`
 - [ ] Implement check-out alias input partial and route (`POST /games/<id>/checkout`):
   - HTMX swaps in alias text input
-  - On submit: `PlayerRepository.find_or_create`, `PlayRepository.create`, `PlayParticipantRepository.create`, `GameCopyRepository.find_available` → set to `In Play`
+  - On submit: `PlayerRepository.find_or_create`, `PlayRepository.create` (with `checked_out_by_player_id`), `GameCopyRepository.find_available` → set to `In Play`
   - Returns updated `partials/scan_result.html`
 
 - [ ] Write tests for check-in (mock repositories):
@@ -112,7 +112,7 @@ Work through phases in order. Write tests before implementation. Mark items done
   - `GET /players/search?q=ali` returns matching players as HTML partial
   - Empty query returns no results
 - [ ] Implement player search (`GET /players/search?q=`):
-  - Uses `PlayerRepository.find_by_alias` (or name search)
+  - Uses `PlayerRepository.find_by_alias`
   - Returns `partials/player_row.html` with matching players
 
 - [ ] Write tests for log play page:

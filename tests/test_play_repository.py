@@ -4,6 +4,7 @@ from lib.game_copy import GameCopy
 from lib.board_game import BoardGame
 from lib.play import Play
 from lib.play_repository import PlayRepository
+from lib.player import Player
 
 @pytest.fixture
 def seed_board_games_game_copies(db):
@@ -21,7 +22,12 @@ def seed_board_games_game_copies(db):
         GameCopy(id=4,  board_game_id=3,    availability_status="In Play",      condition="Excellent",  notes="",                               shelf_location="C4"),
         GameCopy(id=5,  board_game_id=3,    availability_status="In Play",      condition="Excellent",  notes="",                               shelf_location="C4"),
         GameCopy(id=6,  board_game_id=3,    availability_status="Maintenance",  condition="Poor",       notes="Box broken",                     shelf_location="C4"),
-        GameCopy(id=7,  board_game_id=3,    availability_status="Available",    condition="Excellent",  notes="Brand new",                      shelf_location="C4")
+        GameCopy(id=7,  board_game_id=3,    availability_status="Available",    condition="Excellent",  notes="Brand new",                      shelf_location="C4"),
+        Player(id=1,    alias="ace"),
+        Player(id=2,    alias="due"),
+        Player(id=3,    alias="trois"),
+        Player(id=4,    alias="vier"),
+        Player(id=5,    alias="cinqo")
     ])
     db.session.commit()
 
@@ -36,7 +42,11 @@ def test_create_play(db, seed_board_games_game_copies):
 
 def test_find_open_play(db, seed_board_games_game_copies):
     play_repo = PlayRepository()
-    play = Play(board_game_id=2)
-    play_repo.create(play)
+    play_1 = Play(board_game_id=2, checked_out_by_player_id=1)
+    play_2 = Play(board_game_id=4, checked_out_by_player_id=3)
+    play_repo.create(play_1)
+    play_repo.create(play_2)
     play_repo.find_open(board_game_id=2, checked_out_by_player_id=1)
+
+
         
