@@ -31,8 +31,8 @@ class GameCopyRepository:
     def find_available(self, board_game_id: int) -> list[GameCopy]:
         return list(
             db.session.execute(
-            db.select(GameCopy).
-            where(
+            db.select(GameCopy)
+            .where(
                 GameCopy.board_game_id == board_game_id,
                 GameCopy.availability_status == 'Available'
             )
@@ -42,8 +42,7 @@ class GameCopyRepository:
     def find_maintenance(self) -> list[GameCopy]:
         return list(
             db.session.execute(
-            db.select(GameCopy).
-            where(
+            db.select(GameCopy).where(
                 GameCopy.availability_status == 'Maintenance'
             )
         ).scalars().all()

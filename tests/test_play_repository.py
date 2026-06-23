@@ -7,7 +7,7 @@ from lib.play_repository import PlayRepository
 from lib.player import Player
 
 @pytest.fixture
-def seed_board_games_game_copies(db):
+def seed_board_games_game_copies_players(db):
     db.session.add_all([
         BoardGame(name="Pinched!",       bgg_id=450685, factory_upc="5350705999709",  min_players=2, max_players=5, min_time=45, max_time=60,  publisher="Mighty Boards, Lucky Duck Games", designer="Jonathan Gilmour-Long, David Gordon (I)", artist="Max Kosek, Vesna 'vesner' Redesiuk",        is_expansion=False),
         BoardGame(name="Catan",          bgg_id=13,     factory_upc="029877030415",  min_players=3, max_players=4, min_time=60, max_time=120, publisher="KOSMOS",                          designer="Klaus Teuber",                            artist="Michael Menzel",                           is_expansion=False),
@@ -31,22 +31,33 @@ def seed_board_games_game_copies(db):
     ])
     db.session.commit()
 
-def test_create_play(db, seed_board_games_game_copies):
+def test_create_play(db, seed_board_games_game_copies_players):
     play_repo = PlayRepository()
-    play = Play(board_game_id=2)
-    play_repo.create(play)
+    play = Play(board_game_id=2,    checked_out_by_player_id=1)
+    assert play == play_repo.create(play)
     assert play.id is not None
     assert play.start_time is not None
     assert play.end_time is None
     assert play.duration_minutes is None
 
-def test_find_open_play(db, seed_board_games_game_copies):
+def test_close_play(db, seed_board_games_game_copies_players):
     play_repo = PlayRepository()
-    play_1 = Play(board_game_id=2, checked_out_by_player_id=1)
-    play_2 = Play(board_game_id=4, checked_out_by_player_id=3)
+    play = Play(board_game_id=2,    checked_out_by_player_id=1)
+    play_repo.create(play)
+    play_repo.close(play)
+    assert play.end_time is not None
+    assert play.duration_minutes is not None
+
+def test_find_open_play(db, seed_board_games_game_copies_players):
+    play_repo = PlayRepository()
+    play_1 = Play(board_game_id=2,  checked_out_by_player_id=1)
+    play_2 = Play(board_game_id=4,  checked_out_by_player_id=3)
     play_repo.create(play_1)
     play_repo.create(play_2)
-    play_repo.find_open(board_game_id=2, checked_out_by_player_id=1)
+    assert play_1 == play_repo.find_open(board_game_id=2,   player_id=1)
+    assert play_2 == play_repo.find_open(board_game_id=4,   player_id=3)
+
+
 
 
         
