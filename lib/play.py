@@ -12,3 +12,13 @@ class Play(db.Model):
     start_time: Mapped[datetime] = mapped_column(server_default=func.now())
     end_time: Mapped[datetime | None]
     duration_minutes: Mapped[int | None] = mapped_column(db.SmallInteger)
+
+    def __eq__(self, other):
+        play1 = {k: v for k, v in self.__dict__.items() if k != '_sa_instance_state'}
+        play2 = {k: v for k, v in other.__dict__.items() if k != '_sa_instance_state'}
+        return play1 == play2
+    
+    def __repr__(self):
+        return f"Play({self.id}, {self.board_game_id}, {self.start_time}, {self.end_time}, {self.duration_minutes})"
+
+
