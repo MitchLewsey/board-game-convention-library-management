@@ -28,7 +28,7 @@ Work through phases in order. Write tests before implementation. Mark items done
   - App fixture using `TEST_DATABASE_URL`
   - DB fixture that creates and tears down tables per test
   - Session fixture for inserting test data
-- [] Write one model test file per model in `tests/`:
+- [x] Write one model test file per model in `tests/`:
   - `tests/test_board_game_model.py` — constructs correctly, `factory_upc` is unique, self-referential FK (expansion → base game)
   - `tests/test_game_copy_model.py` — `availability_status` rejects values outside enum, `condition` rejects values outside enum
   - `tests/test_play_model.py` — `start_time` defaults to now, `end_time` is nullable
@@ -38,7 +38,7 @@ Work through phases in order. Write tests before implementation. Mark items done
   - `tests/test_board_game_repository.py` — `all` returns all games, `find_by_upc` returns correct game; returns `None` for unknown UPC, `find_by_name` returns partial name matches ordered by name
   - `tests/test_game_copy_repository.py` — `count_available`, `find_available` returns copies or an empty list, `find_in_play`, `flag_maintenance` sets status and notes
   - `tests/test_player_repository.py` — `find_by_alias` returns player or `None`, `find_or_create` returns existing or creates new, `find_with_open_plays`
-  - `tests/test_play_repository.py` — `create` sets `start_time` and `end_time` as `None`, `find_open`, `close` sets `end_time` and `duration_minutes`
+  - `tests/test_play_repository.py` — `create` sets `start_time` to the current time and leaves `end_time` as `None`, `find_open`, `close` sets `end_time` and `duration_minutes`
   - `tests/test_play_participant_repository.py` — `create` creates participant row, `add_detail` updates score, winner flag, and rating
 - [ ] Write one repository file per model in `lib/` — implement all classes to pass the tests:
   - `lib/board_game_repository.py` — `BoardGameRepository`
