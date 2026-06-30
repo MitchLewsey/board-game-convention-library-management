@@ -1,0 +1,7 @@
+# Journal Index
+
+Historical record of work completed on this project. Newest first.
+
+## 2026
+
+- [2026-06-30 — GameCopyRepository.set_status (renamed from flag_maintenance)](2026-06-30-game-copy-set-status.md) — General status+notes setter for game copies, TDD'd; uncovered an `all()` ordering fragility (no `ORDER BY`).

@@ -39,10 +39,11 @@ def test_all_returns_all_game_copies(db, seed_board_games_game_copies):
 def test_create_game_copy(db, seed_board_games_game_copies):
     repo = GameCopyRepository()
     game_copy = GameCopy(id=8,  board_game_id=2,    availability_status="Available",  condition="Excellent",       notes="New",                 shelf_location="B2")
-    repo.create(game_copy)
+    created_copy = repo.create(game_copy)
     assert len(repo.all()) == 8
     assert repo.all()[7].board_game_id == 2
     assert repo.all()[7].availability_status == "Available"
+    assert created_copy == game_copy
 
 def test_count_available_copies_returns_correctly_number_of_available_copies(db, seed_board_games_game_copies):
     repo = GameCopyRepository()
@@ -77,3 +78,17 @@ def test_find_maintenance_copies(db, seed_board_games_game_copies):
         GameCopy(id=3,  board_game_id=2,    availability_status="Maintenance",  condition="Poor",       notes="Missing tokens",                 shelf_location="B2"),
         GameCopy(id=6,  board_game_id=3,    availability_status="Maintenance",  condition="Poor",       notes="Box broken",                     shelf_location="C4")
     ]
+
+def test_set_status_flags_copy_for_maintenance(db, seed_board_games_game_copies):
+    repo = GameCopyRepository()
+    flagged_copy = repo.set_status(1, "Maintenance", "Missing 3 cards")
+    assert flagged_copy.availability_status == "Maintenance"
+    assert flagged_copy.notes == "Missing 3 cards"
+    assert len(repo.find_maintenance()) == 3
+
+def test_set_status_returns_copy_to_available(db, seed_board_games_game_copies):
+    repo = GameCopyRepository()
+    flagged_copy = repo.set_status(3, "Available", "Tokens replaced")
+    assert flagged_copy.availability_status == "Available"
+    assert flagged_copy.notes == "Tokens replaced"
+    assert len(repo.find_maintenance()) == 1

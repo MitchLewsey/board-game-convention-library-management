@@ -13,10 +13,10 @@ class GameCopyRepository:
             db.select(GameCopy))
             .scalars().all())
     
-    def create(self, game_copy) -> None:
+    def create(self, game_copy) -> GameCopy:
         db.session.add(game_copy)
         db.session.commit()
-        return None
+        return game_copy
     
     def count_available(self, board_game_id) -> int:
         return db.session.execute(
@@ -48,6 +48,11 @@ class GameCopyRepository:
             )
         ).scalars().all()
         )
-    
 
-    
+    def set_status(self, copy_id, status, notes) -> GameCopy:
+        game_copy = db.session.get(GameCopy, copy_id)
+        game_copy.availability_status = status
+        game_copy.notes = notes
+        db.session.commit()
+        return game_copy
+
