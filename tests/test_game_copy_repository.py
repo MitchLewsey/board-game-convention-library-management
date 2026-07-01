@@ -92,3 +92,10 @@ def test_set_status_returns_copy_to_available(db, seed_board_games_game_copies):
     assert flagged_copy.availability_status == "Available"
     assert flagged_copy.notes == "Tokens replaced"
     assert len(repo.find_maintenance()) == 1
+
+def test_find_in_play(db, seed_board_games_game_copies):
+    repo = GameCopyRepository()
+    assert repo.find_in_play(board_game_id=3) == [
+        GameCopy(id=4,  board_game_id=3,    availability_status="In Play",      condition="Excellent",  notes="",   shelf_location="C4"),
+        GameCopy(id=5,  board_game_id=3,    availability_status="In Play",      condition="Excellent",  notes="",   shelf_location="C4")
+    ]
